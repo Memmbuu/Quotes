@@ -18,6 +18,7 @@
       --border: #2a2a2a;
       --accent: #ffffff;
       --soft: #1c1c1c;
+      --danger: #ff6b6b;
     }
 
     * {
@@ -78,7 +79,7 @@
 
     textarea {
       flex: 1;
-      min-height: 100px;
+      min-height: 110px;
       background: var(--soft);
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -142,7 +143,7 @@
       padding: 18px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      gap: 14px;
     }
 
     .quote p {
@@ -150,11 +151,30 @@
       line-height: 1.5;
     }
 
+    .quote footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .quote small {
-      margin-top: 12px;
       color: var(--muted);
-      font-size: 0.85rem;
-      text-align: right;
+      font-size: 0.8rem;
+    }
+
+    .delete-btn {
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: var(--danger);
+      color: #000;
     }
   </style>
 </head>
@@ -172,7 +192,7 @@
       </div>
       <div class="actions">
         <button onclick="addQuote()">Save to vault</button>
-        <span class="hint">Saved securely · syncs across devices</span>
+        <span class="hint">Saved permanently · synced across devices</span>
       </div>
     </section>
 
@@ -196,16 +216,29 @@
     const input = document.getElementById('quoteInput');
 
     function loadQuotes() {
-      db.collection('quotes').orderBy('created', 'desc').onSnapshot(snapshot => {
-        quotesEl.innerHTML = '';
-        snapshot.forEach(doc => {
-          const q = doc.data();
-          const div = document.createElement('div');
-          div.className = 'quote';
-          div.innerHTML = `<p>"${q.text}"</p><small>${q.date}</small>`;
-          quotesEl.appendChild(div);
+      db.collection('quotes')
+        .orderBy('created', 'desc')
+        .onSnapshot(snapshot => {
+          quotesEl.innerHTML = '';
+
+          snapshot.forEach(doc => {
+            const q = doc.data();
+            const id = doc.id;
+
+            const div = document.createElement('div');
+            div.className = 'quote';
+
+            div.innerHTML = `
+              <p>“${q.text}”</p>
+              <footer>
+                <small>${q.date}</small>
+                <button class="delete-btn" onclick="deleteQuote('${id}')">Delete</button>
+              </footer>
+            `;
+
+            quotesEl.appendChild(div);
+          });
         });
-      });
     }
 
     function addQuote() {
@@ -219,6 +252,11 @@
       });
 
       input.value = '';
+    }
+
+    function deleteQuote(id) {
+      if (!confirm('Delete this quote?')) return;
+      db.collection('quotes').doc(id).delete();
     }
 
     input.addEventListener('keydown', e => {
